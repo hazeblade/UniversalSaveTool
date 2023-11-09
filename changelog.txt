@@ -1,21 +1,24 @@
 1.2.0	HUUUUGE UPDATE! Hope y'all enjoy the new and improved UST.
 
 	New Features:
-		Profile support has been enabled. You can now set up the UST for multiple games without resetting your config each time! There is no limit to how many profiles you can have, but see known issues for important info!
+		Profile support has been enabled. You can now set up the UST for multiple games without resetting your config each time!
 			Profile support includes being able to add, remove, edit, and duplicate any of your profiles.
-		Secondary Save Slots have been added. Some games such as Lies of P store save data back and forth between 2 save slots. You can enable this setting to overwrite both slots and ensure your save file is injected successfully!
+		Secondary Save Slots have been added. Some games (ie. Lies of P) store save data back and forth between 2 save slots. You can enable this setting to overwrite both slots and ensure your save file is injected successfully!
 			Secondary Save Slots are ONLY for loading save data. All saves created with the hotkey will defer to your Primary Save Slot.
 
 	QoL Improvements:
 		The listbox now updates automatically every so often :) I will probably deprecate the refresh button soon unless issues arise.
 		When you rename a save, it remains selected so you don't have to find it again.
 		Numerous improvements to the selected_input variable in the listbox so it remains more consistent if you're manipulating anything manually in the Save File directory in File Explorer. See known issues for more info.
+		Replaced audio cues with 2 distinct beeps to more easily tell between creating and loading saves with the audio turned on.
+
+	Bug Fixes:
+		Canceling out of the delete prompt no longer breaks the software.
+		Fixed as issue where a prompt that would appear if winsound could not find the locations for audio cues in the registry.
 
 	Known Issues:
-		Depending on your OS and system configuration, you may receive a prompt when loading a save that the Selected file or directory is not found, even though the save actually loads without any issues.
-			The issue is coming from the audio referencing system sounds in the Windows Registry. I'm working on a fix, but if you just uncheck the audio box, the prompt will go away and you can use the software as normal.
-			Some games have save files that constantly change the filename. In the near future, I am hoping to release an update that can scan for these changes and track the filename in real-time.
-			There is currently no scroll feature implemented in the option menu for picking a profile. Unless you have 50+ profiles it probably won't be noticeable, but I will see about adding a scroll feature soon.
+		Some games have save files that constantly change the filename. In the near future, I am hoping to release an update that can scan for these changes and track the filename in real-time.
+		There is currently no scroll feature implemented in the option menu for picking a profile. Unless you have 50+ profiles it probably won't be noticeable, but I will see about adding a scroll feature soon.
 
 1.1.1	QoL Improvements
 		Newly created saves are automatically selected so you can quickly reload them without having to tab out.
