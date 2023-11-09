@@ -3,6 +3,9 @@ Universal Save Tool
 version 1.2.0
 by Hazeblade
 
+Releases:
+https://github.com/hazeblade/UST/releases
+
 --------------------------------------------
 
 Launch UniversalSaveTool.exe.
