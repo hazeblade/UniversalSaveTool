@@ -1,0 +1,93 @@
+1.2.0	HUUUUGE UPDATE! Hope y'all enjoy the new and improved UST.
+
+	New Features:
+		Profile support has been enabled. You can now set up the UST for multiple games without resetting your config each time! There is no limit to how many profiles you can have, but see known issues for important info!
+			Profile support includes being able to add, remove, edit, and duplicate any of your profiles.
+		Secondary Save Slots have been added. Some games such as Lies of P store save data back and forth between 2 save slots. You can enable this setting to overwrite both slots and ensure your save file is injected successfully!
+			Secondary Save Slots are ONLY for loading save data. All saves created with the hotkey will defer to your Primary Save Slot.
+
+	QoL Improvements:
+		The listbox now updates automatically every so often :) I will probably deprecate the refresh button soon unless issues arise.
+		When you rename a save, it remains selected so you don't have to find it again.
+		Numerous improvements to the selected_input variable in the listbox so it remains more consistent if you're manipulating anything manually in the Save File directory in File Explorer. See known issues for more info.
+
+	Known Issues:
+		Depending on your OS and system configuration, you may receive a prompt when loading a save that the Selected file or directory is not found, even though the save actually loads without any issues.
+			The issue is coming from the audio referencing system sounds in the Windows Registry. I'm working on a fix, but if you just uncheck the audio box, the prompt will go away and you can use the software as normal.
+			Some games have save files that constantly change the filename. In the near future, I am hoping to release an update that can scan for these changes and track the filename in real-time.
+			There is currently no scroll feature implemented in the option menu for picking a profile. Unless you have 50+ profiles it probably won't be noticeable, but I will see about adding a scroll feature soon.
+
+1.1.1	QoL Improvements
+		Newly created saves are automatically selected so you can quickly reload them without having to tab out.
+
+1.1.0	New Features:
+		Added Renaming and Deleting Save Files within the app.
+			Bound to F2 and DELETE, respectively, by default. Can rebind if desired.
+			Unlike the Save and Load hotkeys, these ones only work while tabbed in to prevent accidents.
+	
+	Minor Changes:
+		Added error logging for most user operations. Email your log to brendon@hazeblade.tv if you need troubleshooting.
+		Removed output window in favor of prompting the user if actions require more attention.
+
+1.0.3	General:
+		Renamed app and updated branding to better align it's compability with other games.
+		Removed all Dead Space Remake prefab saves.
+
+1.0.2	New Features:
+		Refresh button added to manually repopulate list box after saves have been added/removed.
+			This function executes on app startup, but if you're adding and removing saves in a single session, you can use this to avoid relaunching the app or reselecting the save directory.
+	Other Additions:
+		Added a set of save files (DSR: Story Mode) to the backup saves directory spanning the entire game.
+
+1.0.1	Minor Changes:
+		Removed "Directory Not Assigned" values and set the default directory for backup saves to the relative path of the Saves folder bundled with the tool.
+
+	Bux Fixes:
+		Fixed an error where moving or renaming the install folder can result in the program not launching.
+			 When the application can no longer locate an absolute path for backup saves (ie. the path is moved or renamed), it will return to the default directory and load as normal.
+
+
+1.0	The full release is here! I've accomplished just about everything I've set out to do with this tool. I may decide to add more functions to the list box such as creating folders, renaming files,
+	etc to allow all of the file management to be done completely within the program, but for now that will be all. As always, let me know if you encounter any bugs. Enjoy!
+
+	New Features:
+	-Added a listbox to populate all available save files for the user's chosen backup save directory.
+		Users can click on any of the saves in the list to prime a save file without having to go back into the browse feature to select a new file.
+	
+	Optimizations:
+	-New layout
+		Optimized the overall flow of the GUI, allowing for a much smaller window size. Also made window size adjustable.
+
+	Debugging/Troubleshooting:
+	-Added various confirmations in the console and the output window to assist with initial setup, and troubleshooting potential errors.
+
+
+0.3	Optimizations:
+	-Converted from .txt to .json for higher efficiency in handling application save data.
+	-Eliminated redundancy in variables across all app functions.
+
+	Other Additions:
+	-Renamed default saves for easier identification.
+	-Minor updates to readme, icons and overall presentation.
+	-Capitalized hotkey assignments in GUI for better visibility.
+	-Shamelessly plugged my Patreon for anyone feeling generous :)
+
+
+0.2:	Functional Improvements:
+	-Replaced default save with non-deluxe edition saves for Story and Impossible to prevent popups on load.
+	-Browse and select custom save files to inject.
+	-Toggle Audio On/Off.
+	-Added reset button to return values to installed defaults.
+	-Added version number to title.
+	-Added prompt to notify user that Impossible saves can only be injected into other Impossible saves.
+		This prompt can be disabled by checking the check button on startup.
+
+
+0.1:	Initial build, with basic functionality for injecting a default Story Mode Save File into Dead Space Remake. Features include:
+	-Browse and select save slot to write to.
+	-Inject a prefabricated Story Mode save file to selected save slot using a hotkey.
+	-Set a custom hotkey to trigger save injection.
+
+	Known Issues:
+	-Windows Defender flags the software as a keylogger. Issue seems to be coming from pynput's keyboard listener function.
+	-If user doesn't have Deluxe Edition for Dead Space Remake, they receive a prompt when loading the save that they are missing features.
