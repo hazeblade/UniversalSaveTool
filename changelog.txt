@@ -7,6 +7,7 @@
 			Secondary Save Slots are ONLY for loading save data. All saves created with the hotkey will defer to your Primary Save Slot.
 
 	QoL Improvements:
+		We're on GitHub! Find the latest releases here: https://github.com/hazeblade/UniversalSaveTool/releases
 		The listbox now updates automatically every so often :) I will probably deprecate the refresh button soon unless issues arise.
 		When you rename a save, it remains selected so you don't have to find it again.
 		Numerous improvements to the selected_input variable in the listbox so it remains more consistent if you're manipulating anything manually in the Save File directory in File Explorer. See known issues for more info.
