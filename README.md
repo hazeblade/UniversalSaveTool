@@ -4,7 +4,7 @@ version 1.2.0
 by Hazeblade
 
 Releases:
-https://github.com/hazeblade/UST/releases
+https://github.com/hazeblade/UniversalSaveTool/releases
 
 --------------------------------------------
 
