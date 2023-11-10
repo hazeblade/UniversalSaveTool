@@ -1,5 +1,5 @@
 ### Universal Save Tool by Hazeblade###
-version = "ver. 1.2.0"
+version = "ver. 1.2.5"
 #Library Imports.
 from tkinter import *
 from tkinter import filedialog
@@ -8,11 +8,13 @@ from tkinter import simpledialog
 from tkinter import messagebox
 from functools import partial
 from pynput.keyboard import Listener
-import keyboard, shutil, winsound, json, webbrowser, os, logging, base64, tempfile
+import keyboard, shutil, winsound, json, webbrowser, os, logging, base64, tempfile, threading, time, copy
 import tkinter as tk
 import pygetwindow as gw
 import base64
 from tkinter import PhotoImage
+from tkinter import ttk
+from os.path import basename
 
 #Default Configuration Dictionary
 default_config = {
@@ -27,7 +29,9 @@ default_config = {
         "Default Profile": {
             "inputfile": "Saves/",
             "outputfile": "Not Assigned",
-            "outputfilesecondary": "Not Assigned"
+            "outputfilesecondary": "Not Assigned",
+            "secondarystate": "disabled",
+            "dynamicsaves": 0
         }
     }
 }
@@ -71,22 +75,32 @@ def close_opt(): #Closes the Dead Space Remake Impossible Disclaimer.
     win0.destroy()
 
 
+from tkinter import simpledialog
+
 def create_profile():
     global selected_profile
-    profile_name = simpledialog.askstring("Create Profile", "Enter a name for the profile:")
+    profile_name = simpledialog.askstring("Create Profile", "Enter a name for the profile (max 20 characters):")
+    
     if profile_name is not None:
+        # Truncate the input to the first 20 characters
+        profile_name = profile_name[:20]
+
         if profile_name.strip():  # Check if the name is not blank
             if profile_name not in config['profiles']:
+
                 new_profile = {
                     'inputfile': 'Saves/',
                     'outputfile': 'Not Assigned',
-                    'outputfilesecondary': 'Not Assigned'
+                    'outputfilesecondary': 'Not Assigned',
+                    'secondarystate': 'disabled',
+                    'dynamicsaves': 0
                 }
+
                 if 'profiles' not in config:
                     config['profiles'] = {}
 
                 config['profiles'][profile_name] = new_profile
-                update_profiles()
+                update_profile_dropdown()
                 write_data()
 
                 selected_profile = profile_name
@@ -116,7 +130,7 @@ def edit_profile():
                     config['profiles'][new_profile_name] = profile_data
 
                     # Update the profile dropdown menu
-                    update_profiles()
+                    update_profile_dropdown()
 
                     # Save the changes to the JSON file
                     write_data()
@@ -139,19 +153,23 @@ def duplicate_profile():
         if copied_profile_name.strip():  # Check if the new name is not blank
             if copied_profile_name not in config['profiles']:
                 if selected_profile in config['profiles']:
-                    # Create a copy of the profile data
-                    profile_data = config['profiles'][selected_profile].copy()
+                    # Create a deep copy of the profile data
+                    profile_data = copy.deepcopy(config['profiles'][selected_profile])
 
                     # Add the profile data with the new name
                     config['profiles'][copied_profile_name] = profile_data
 
                     # Update the profile dropdown menu
-                    update_profiles()
+                    update_profile_dropdown()
 
                     # Save the changes to the JSON file
                     write_data()
 
-                    profile_var.set(copied_profile_name)
+                    # Set the newly created profile as the selected profile
+                    selected_profile = copied_profile_name
+                    profile_var.set(selected_profile)
+
+                    # Refresh the UI for the selected profile
                     select_profile(None)
                 else:
                     messagebox.showwarning("Profile Not Found", "Selected profile not found in configuration.")
@@ -161,8 +179,10 @@ def duplicate_profile():
             messagebox.showwarning("Invalid Profile Name", "Please enter a valid profile name.")
 
 
+
 def delete_profile():
-    global selected_profile
+    global selected_profile, stop_scan, dynamic_filename_var, checkbox2
+
     if not selected_profile:
         messagebox.showinfo("Delete Profile", "Please select a profile to delete.")
         return
@@ -170,7 +190,7 @@ def delete_profile():
     confirm = messagebox.askyesno("Delete Profile", f"Do you want to delete the '{selected_profile}' profile? This action cannot be undone.")
     if confirm:
         del config['profiles'][selected_profile]
-        update_profiles()
+        update_profile_dropdown()
 
         # Set the selected profile to the first key in the updated profiles
         profiles = list(config['profiles'].keys())
@@ -194,38 +214,63 @@ def load_last_used_profile():
     last_used_profile = config['last_used_profile']
     if last_used_profile in config['profiles']:
         selected_profile = last_used_profile
-        # Load the selected profile's settings here
-        # For example, set input_var, output_var, and output_var_secondary accordingly
     else:
-        # Handle the case where the last used profile doesn't exist
-        # You can set default values or show a message to the user
         selected_profile = "Default Profile"  # Set a default profile if necessary
-        # Load the default profile's settings
 
 
-def update_profiles():
-    profiles = load_profiles()
-    profile_var.set(config['last_used_profile'])
-    menu = profile_dropdown["menu"]
-    menu.delete(0, "end")
-    for profile in profiles:
-        menu.add_command(label=profile, command=lambda p=profile: profile_var.set(p))
-
+from tkinter import messagebox
 
 def select_profile(event):
-    global selected_profile
+    global selected_profile, dynamic_filename_var, scan_thread
+
     selected_profile = profile_var.get()
     config['last_used_profile'] = selected_profile
+
+    # Stop the current scanner (if running)
+    stop_scan.set()
+
     if selected_profile in config['profiles']:
         profile_data = config['profiles'][selected_profile]
+
+        # Handle Dynamic Save Slots
+        if profile_data['dynamicsaves'] == 0:
+            dynamic_filename_var.set(0)
+        elif profile_data['dynamicsaves'] == 1:
+            dynamic_filename_var.set(1)
+            # Recreate and start the scanner thread
+            stop_scan.clear()
+            scan_thread = threading.Thread(target=scan_folder, args=(selected_profile,))
+            scan_thread.daemon = True
+            scan_thread.start()
+
+        # Handle Secondary Save Slot
+        if profile_data['secondarystate'] == "normal":
+            # Check the checkbox, turn on browse button and label
+            checkbox.select()
+            secondary_save_slot_entry['state'] = NORMAL
+            secondsave['state'] = NORMAL
+        else:
+            # Disable the browse button and label
+            checkbox.deselect()
+            secondary_save_slot_entry['state'] = DISABLED
+            secondsave['state'] = DISABLED
+
+        # Update other UI elements
         input_var.set(profile_data['inputfile'])
-        output_var.set(profile_data['outputfile'])
-        output_var_secondary.set(profile_data['outputfilesecondary'])
+        full_file_path = profile_data['outputfile']
+        file_name = basename(full_file_path)
+        output_var.set(file_name)
+        full_file_path_secondary = profile_data['outputfilesecondary']
+        file_name_secondary = basename(full_file_path_secondary)
+        output_var_secondary.set(file_name_secondary)
+
         # Update the input directory for the selected profile
         input_dir_load(profile_data['inputfile'], selected_profile, [])
+
         # Refresh the listbox
         write_data()
         refresh_listbox()
+
 
     
 def listbox_populate(filepath, input_dir): #Get a list of all save files in the chosen directory.
@@ -283,17 +328,30 @@ def auto_refresh_listbox():
 
 
 #Initalize config and provide notice to user if applicable. Also checks that config file is found, and if not, will create one with defaults.
+def update_config(config, default_config):
+    # Update existing configuration with new keys from default configuration
+    for profile, profile_data in config["profiles"].items():
+        # Update user's profile data with new keys from the default profile
+        for key, value in default_config["profiles"]["Default Profile"].items():
+            profile_data.setdefault(key, value)
+
+    # Save the updated configuration to the file
+    with open('data\\config.json', 'w') as config_file:
+        json.dump(config, config_file, indent=4)
+
+# Load the existing configuration or create a new one with defaults
 try:
     with open('data\\config.json', 'r') as f:
         config = json.load(f)
-        
-except(FileNotFoundError, json.JSONDecodeError):
-    if not os.path.exists('data'):
-        os.makedirs('data')
-        
+
+except (FileNotFoundError, json.JSONDecodeError):
+    # Create a new configuration with defaults if the file is not found or cannot be decoded
+    config = default_config
     with open('data\\config.json', 'w') as f:
-        json.dump(default_config, f, indent=4)
-        config = default_config
+        json.dump(config, f, indent=4)
+
+# Update the configuration
+update_config(config, default_config)
         
 if config['disclaimer'] == 1 or config['disclaimer']!= 0: #Executes a TKinter prompt window if the user is opted in.
     win0=Tk()
@@ -345,37 +403,33 @@ def open_file_input(selected_profile): #Requests the user choose a directory whe
 
         
 def open_file_output(selected_profile): #Requests the user to choose save slot for loading and creating save files.
-    filepath = filedialog.askopenfilename(title="Select a Save File", filetype=[("SAV Files","*.sav")]) #Ask for the file.
+    filepath = filedialog.askopenfilename(title="Select a Save File", filetype=[("SAV Files", "*.sav"), ("All Files", "*.*")]) #Ask for the file.
     if filepath == "": #Change nothing if the user hits Cancel.
         return
-        
-    elif '.sav' not in filepath:
-        messagebox.showwarning("WARNING", "You must select a .sav file!")
         
     else: #Write the provided file to saved application data. This allows users to only have to set up their save files on initial launch.
         # Update the outputfile for the selected profile
         if selected_profile in config['profiles']:
             config['profiles'][selected_profile]['outputfile'] = filepath
             write_data()
-            output_var.set(filepath)  # update the GUI text.
+            file_name = basename(filepath)
+            output_var.set(file_name)  # update the GUI text.
         else:
             messagebox.showwarning("Profile Not Found", "Selected profile not found in configuration.")
 
 
 def open_file_output_secondary(): #Requests the user to choose save slot for loading and creating save files.
-    filepath = filedialog.askopenfilename(title="Select a Save File", filetype=[("SAV Files","*.sav")]) #Ask for the file.
+    filepath = filedialog.askopenfilename(title="Select a Save File", filetype=[("SAV Files","*.sav"), ("All Files", "*.*")]) #Ask for the file.
     if filepath == "": #Change nothing if the user hits Cancel.
         return
-        
-    elif '.sav' not in filepath:
-        messagebox.showwarning("WARNING", "You must select a .sav file!")
         
     else: #Write the provided file to saved application data. This allows users to only have to set up their save files on initial launch.
         # Update the outputfile for the selected profile
         if selected_profile in config['profiles']:
             config['profiles'][selected_profile]['outputfilesecondary'] = filepath
             write_data()
-            output_var_secondary.set(filepath)  # update the GUI text.
+            file_name = basename(filepath)
+            output_var_secondary.set(file_name)  # update the GUI text.
         else:
             messagebox.showwarning("Profile Not Found", "Selected profile not found in configuration.")
 
@@ -527,12 +581,19 @@ def confirm_sound(): #Toggles the audio cue when saves are injected.
         write_data()
 
     
-def reset_config(): #Resets all Application Save Data and closes the tool.
-    global config
-    config = default_config
-    write_data()
-    messagebox.showinfo ("NOTICE", "Reset Complete! Software will close.") #Prompt user reset completed.
-    win.destroy() #Close the tool.
+def reset_config():
+    # Ask for confirmation
+    confirmation = messagebox.askyesno("Reset Confirmation", "Are you sure you want to reset? All data will be wiped!")
+
+    if confirmation:
+        global config
+        config = default_config
+        write_data()
+        messagebox.showinfo("Reset Complete", "Reset complete! The software will close.")
+        win.destroy()  # Close the tool
+    else:
+        # User chose not to reset, do nothing
+        pass
 
     
 def hyperlink(url):
@@ -724,25 +785,137 @@ def deleteSave():
         messagebox.showerror("Error", f"An error occurred while deleting a save: {e}")
         
 
+# Init scan variables
+scan_thread = None
+stop_scan = threading.Event()
+
+def scan_folder(selected_profile):
+    global stop_scan, dynamic_filename_var
+    while not stop_scan.is_set():
+        try:
+            # Check if the folder exists for the main save slot
+            output_file_path = config['profiles'][selected_profile]['outputfile']
+            folder_path, file_name = os.path.split(output_file_path)
+
+            if not os.path.exists(folder_path):
+                messagebox.showinfo("Reminder", "Please configure your main save slot before enabling Dynamic Save Slots.")
+                stop_scan.set()  # Shut down the scanner
+                dynamic_filename_var.set(0)  # Turn off the checkbox
+                config['profiles'][selected_profile]['dynamicsaves'] = 0
+                write_data()
+                continue
+
+            files = [f for f in os.listdir(folder_path) if os.path.isfile(os.path.join(folder_path, f))]
+            found_file = find_file_with_numbers(files)
+
+            if found_file:
+                # Update the output_var and configuration for the main save slot
+                file_name = basename(os.path.join(folder_path, found_file))
+                output_var.set(file_name)
+                config['profiles'][selected_profile]['outputfile'] = os.path.join(folder_path, found_file)
+                write_data()
+
+            if config['profiles'][selected_profile]['secondarystate'] == "normal":
+                    output_file_path_secondary = config['profiles'][selected_profile]['outputfilesecondary']
+                    folder_path_secondary, file_name_secondary = os.path.split(output_file_path_secondary)
+                    if config['profiles'][selected_profile]['outputfilesecondary'] == "Not Assigned" or not os.path.exists(folder_path_secondary):
+                        messagebox.showinfo("Reminder", "Please configure your secondary save slot before enabling Dynamic Save Slots.")
+                        stop_scan.set()  # Shut down the scanner
+                        dynamic_filename_var.set(0)  # Turn off the checkbox
+                        config['profiles'][selected_profile]['dynamicsaves'] = 0
+                        write_data()
+                        continue
+
+                    files_secondary = [f for f in os.listdir(folder_path_secondary) if os.path.isfile(os.path.join(folder_path_secondary, f))]
+                    found_file_secondary = find_file_with_numbers(files_secondary)
+
+                    if found_file_secondary:
+                        # Update the output_var and configuration for the secondary save slot
+                        file_name_secondary = basename(os.path.join(folder_path_secondary, found_file_secondary))
+                        output_var_secondary.set(file_name_secondary)
+                        config['profiles'][selected_profile]['outputfilesecondary'] = os.path.join(folder_path_secondary, found_file_secondary)
+                        write_data()
+                        
+
+        except FileNotFoundError as e:
+            logging.error(f"Error in scanning folder: {e}")
+            messagebox.showerror("File Not Found", f"Error in scanning folder: {e}")
+        
+        time.sleep(5)  # Adjust the interval as needed
+
+
+def find_file_with_numbers(files):
+    # Exclude files containing the word "container" or numbers in the extension
+    filtered_files = [file for file in files if 'container' not in file.lower() and not any(char.isdigit() for char in os.path.splitext(file)[1])]
+
+    # Find the first file with numbers in its name from the filtered list
+    for file in filtered_files:
+        if any(char.isdigit() for char in file):
+            return file
+    return None
+
+
+def toggle_dynamic_filename():
+    global scan_thread, stop_scan
+    if dynamic_filename_var.get() == 1:
+        confirmation = messagebox.askyesno("Confirm", "Dynamic Filename only works for games with saves that are renamed when overwritten. Are you sure you want to enable this feature?")
+        if confirmation:
+            # Enable dynamic filename logic
+            config['profiles'][selected_profile]['dynamicsaves'] = 1
+            stop_scan.clear()
+            scan_thread = threading.Thread(target=scan_folder, args=(selected_profile,))
+            scan_thread.daemon = True
+            scan_thread.start()
+        else:
+            # User chose not to enable dynamic filename detection
+            dynamic_filename_var.set(0)  # Uncheck the check button
+    elif dynamic_filename_var.get() == 0:
+        config['profiles'][selected_profile]['dynamicsaves'] = 0
+        if scan_thread:
+            dynamic_filename_var.set(0)
+            message_box = messagebox.showinfo("Dynamic Filename Disabled", "Dynamic filename detection is disabled. There will be one final scan after you click OK. After that you will be able to resume using the software.")
+            # Disable dynamic filename logic
+            stop_scan.set()  # Set the stop_scan flag
+            scan_thread.join()  # Wait for the scanning thread to finish with a timeout           
+    write_data()
+        
+
 # Create a function to handle the checkbox state change
 def on_checkbox_change():
+    # Assuming selected_profile is the current profile
     if secondary_save_enabled.get() == 1:
+        config['profiles'][selected_profile]['secondarystate'] = "normal"
         # Enable secondary save slot selection
         secondsave.config(state=NORMAL)
         secondary_save_slot_entry.config(state=NORMAL)
     else:
         # Disable secondary save slot selection
+        config['profiles'][selected_profile]['secondarystate'] = "disabled"
         secondsave.config(state=DISABLED)
         secondary_save_slot_entry.config(state=DISABLED)
+
+    # Save the data to the configuration file
+    write_data()
+
+
+def update_profile_dropdown():
+    profiles = list(config['profiles'].keys())
+    profile_dropdown['values'] = profiles
+    
+
+def on_close():
+    global stop_scan
+    stop_scan.set()  # Set the stop_scan event to signal the scan_folder thread to stop
+    win.destroy()
 
 
 #Main Tkinter Window Settings.
 win=Tk()
 icon_image = PhotoImage(data=icon_data)
 win.iconphoto(True,icon_image)
-win.geometry("560x560")
+win.geometry("270x440")
 win.title("Universal Save Tool")
-win.minsize(560,560)
+win.minsize(270,440)
 #Define Label Variables.
 input_var = StringVar()
 output_var = StringVar()
@@ -757,6 +930,7 @@ deleteHotkey_var = StringVar()
 deleteHotkey_label = StringVar()
 sound_var = IntVar()
 secondary_save_enabled = IntVar()
+dynamic_filename_var = IntVar()
 #Import Hotkey and Directory Settings From Last Session and Initialize Variables.
 saveHotkey_var.set (config['saveHotkey'])
 saveHotkey_label.set(f"Save: {saveHotkey_var.get()}")
@@ -769,23 +943,11 @@ deleteHotkey_label.set(f"Delete: {deleteHotkey_var.get()}")
 profiles = load_profiles()
 profile_var = tk.StringVar()
 profile_var.set(config['last_used_profile'])
-
-output_var.set(config['profiles'][profile_var.get()]['outputfile'])
-if '.sav' not in config['profiles'][profile_var.get()]['outputfile'] and config['profiles'][profile_var.get()]['outputfile'] != "Not Assigned":
-    messagebox.showwarning("WARNING", "Your Save Slot must be a .sav file.")
-    config['profiles'][profile_var.get()]['outputfile'] = "Not Assigned"
-    write_data()
-
-output_var_secondary.set(config['profiles'][profile_var.get()]['outputfilesecondary'])
-if '.sav' not in config['profiles'][profile_var.get()]['outputfilesecondary'] and config['profiles'][profile_var.get()]['outputfilesecondary'] != "Not Assigned":
-    messagebox.showwarning("WARNING", "Your Save Slot must be a .sav file.")
-    config['profiles'][profile_var.get()]['outputfilesecondary'] = "Not Assigned"
-    write_data()
-    
-output_var.set(config['profiles'][profile_var.get()]['outputfile'])
-output_var.set(config['profiles'][profile_var.get()]['outputfilesecondary'])
 input_var.set(config['profiles'][profile_var.get()]['inputfile'])
 sound_var.set(config['sound'])
+if config['profiles'][profile_var.get()]['secondarystate'] == 'normal':
+    secondary_save_enabled.set(1)
+dynamic_filename_var.set(config['profiles'][profile_var.get()]['dynamicsaves'])
 input_dir = []
 selected_input = ""
 
@@ -836,35 +998,37 @@ else:
 
 #GUI
 win.rowconfigure(13, weight=1)
-win.columnconfigure(3, weight=1)
-profile_dropdown = OptionMenu(win, profile_var, *profiles)
-profile_dropdown.bind("<Configure>", select_profile)
-profile_dropdown.grid(row=0, column=0, sticky=W, padx=2)
+win.columnconfigure(2, weight=1)
+notebook = ttk.Notebook(win)
+tab1 = ttk.Frame(notebook)
+tab2 = ttk.Frame(notebook)
+tab3 = ttk.Frame(notebook)
+notebook.add(tab1, text="Profiles")
+notebook.add(tab2, text="Keybinds")
+notebook.add(tab3, text="About")
+profile_dropdown = ttk.Combobox(tab1, textvariable=profile_var, values=list(config['profiles'].keys()), state="readonly")
+profile_dropdown.bind("<<ComboboxSelected>>", select_profile)
+profile_dropdown.grid(row=0, column=0, sticky=W, pady=5, padx=5)
 
-button_frame = Frame(win)
-button_frame.grid(row=0, column=3, sticky=E)
-
+button_frame = Frame(tab1)
+button_frame.grid(row=1, column=0, sticky=W)
 # Create the buttons inside the frame
-edit_profile_button = Button(button_frame, text="Edit Profile", command=edit_profile)
-edit_profile_button.grid(row=0, column=0, sticky=W, padx=5)
-
-duplicate_profile_button = Button(button_frame, text="Duplicate", command=duplicate_profile)
-duplicate_profile_button.grid(row=0, column=1, padx=5)
-
-delete_profile_button = Button(button_frame, text="Delete Profile", command=delete_profile)
-delete_profile_button.grid(row=0, column=2, padx=5)
-
 create_profile_button = Button(button_frame, text="New Profile", command=create_profile)
-create_profile_button.grid(row=0, column=3, padx=5)
+create_profile_button.grid(row=1, column=0, sticky=W, padx=5)
+edit_profile_button = Button(button_frame, text="Edit Profile", command=edit_profile)
+edit_profile_button.grid(row=1, column=1, sticky=E, padx=5)
+duplicate_profile_button = Button(button_frame, text="Duplicate", command=duplicate_profile)
+duplicate_profile_button.grid(row=2, column=0, sticky=W, padx=5)
+delete_profile_button = Button(button_frame, text="Delete Profile", command=delete_profile)
+delete_profile_button.grid(row=2, column=1, sticky=E, padx=5)
 
-
-line1 = Label(win, text="Choose a Save File to Load:", font='Arial 10 bold').grid(row=1, column=0, sticky=W)
+line1 = Label(win, text="Load Save:", font='Arial 10 bold').grid(row=1, column=0, sticky=W)
 line2 = Label(win, textvariable=input_var, font='Arial 10', wraplength=200, justify="left").grid(row=2, column=0, sticky=W)
 #Button to choose Save File output.
-button1 = Button(win, text="Browse...", command=lambda: open_file_input(selected_profile)).grid(row=1, column=3, sticky=E, padx=5)
+button1 = Button(win, text="Browse...", command=lambda: open_file_input(selected_profile)).grid(row=1, column=0, sticky=E, padx=5)
 #Listbox to preview contents of backup saves folder.
 input_listselect = Variable(value=input_dir)
-input_listbox = Listbox(win, listvariable=input_listselect, selectmode=SINGLE, height = 6, width = 35)
+input_listbox = Listbox(win, listvariable=input_listselect, selectmode=SINGLE, height = 6, width = 40)
 input_listbox.grid(row=3, column=0, sticky=W, padx=2)
 input_listbox.bind('<<ListboxSelect>>', input_selected)
 input_scrollbar = Scrollbar(win, orient=VERTICAL)
@@ -872,46 +1036,57 @@ input_scrollbar.grid(row=3, column=1, sticky=NS, padx=0)
 input_listbox.config(yscrollcommand = input_scrollbar.set)
 input_scrollbar.config(command = input_listbox.yview)
 input_dir_load(filepath=config['profiles'][selected_profile]['inputfile'], selected_profile=selected_profile, input_dir=[])
+#Checkbox for Dynamic Save Slots.
+checkbox_frame2 = Frame(win)
+checkbox_frame2.grid(row=4, column=0, sticky=W)
+text_label2 = Label(checkbox_frame2, text="Dynamic Save Slots", font='Arial 10')
+text_label2.grid(row=0, column=0)
+checkbox2 = Checkbutton(checkbox_frame2, variable=dynamic_filename_var, onvalue=1, offvalue=0, command=toggle_dynamic_filename)
+checkbox2.grid(row=0, column=1)
 #Tkinter Save File Description Labels.
-line3 = Label(win, text="Save Slot:", font='Arial 10 bold').grid(row=4, column=0, sticky=W)
-line4 = Label(win, textvariable=output_var, font='Arial 10', wraplength=200, justify="left").grid(row=5, column=0, sticky=W)
+line3 = Label(win, text="Save Slot:", font='Arial 10 bold').grid(row=5, column=0, sticky=W)
+line4 = Label(win, textvariable=output_var, font='Arial 10', wraplength=200, justify="left").grid(row=6, column=0, sticky=W)
 #Button to choose Save File output.
-button2 = Button(win, text="Browse...", command=lambda: open_file_output(selected_profile)).grid(row=5, column=3, sticky=E, padx=5)
+button2 = Button(win, text="Browse...", command=lambda: open_file_output(selected_profile)).grid(row=5, column=0, sticky=E, padx=5)
 #Checkbox for toggling secondary save.
 checkbox_frame = Frame(win)
-checkbox_frame.grid(row=6, column=0, sticky=W)
-text_label = Label(checkbox_frame, text="Secondary Save Slot:", font='Arial 10 bold')
-text_label.grid(row=6, column=0)
+checkbox_frame.grid(row=7, column=0, sticky=W)
+text_label = Label(checkbox_frame, text="Save Slot 2:", font='Arial 10 bold')
+text_label.grid(row=0, column=0)
 checkbox = Checkbutton(checkbox_frame, variable=secondary_save_enabled, onvalue=1, offvalue=0, command=on_checkbox_change)
-checkbox.grid(row=6, column=1)
+checkbox.grid(row=0, column=1)
 # Create an entry for secondary save slot selection
-secondary_save_slot_entry = Button(win, text="Browse...", command=open_file_output_secondary, state=DISABLED)
-secondary_save_slot_entry.grid(row=6, column=3, sticky=E, padx=5)# Initially disabled
-secondsave = Label(win, textvariable=output_var_secondary, font='Arial 10', wraplength=200, justify="left", state=DISABLED)
-secondsave.grid(row=7, column=0, sticky=W)
+secondary_save_slot_entry = Button(win, text="Browse...", command=open_file_output_secondary, state=config['profiles'][selected_profile]['secondarystate'])
+secondary_save_slot_entry.grid(row=7, column=0, sticky=E, padx=5)# state depends on user config
+secondsave = Label(win, textvariable=output_var_secondary, font='Arial 10', wraplength=200, justify="left", state=config['profiles'][selected_profile]['secondarystate'])
+secondsave.grid(row=8, column=0, sticky=W)
 #Keybind Labels.
-line5 = Label(win, text="Keybinds:", font='Arial 10 bold').grid(row=8, column=0, sticky=W)
-line6 = Label(win, textvariable=saveHotkey_label, font='Arial 10').grid(row=9, column=0, sticky=W, padx=2)
-line7 = Label(win, textvariable=loadHotkey_label, font='Arial 10').grid(row=10, column=0, sticky=W, padx=2)
-line8 = Label(win, textvariable=renameHotkey_label, font='Arial 10').grid(row=11, column=0, sticky=W, padx=2)
-line9 = Label(win, textvariable=deleteHotkey_label, font='Arial 10').grid(row=12, column=0, sticky=W, padx=2)
+line5 = Label(tab2, textvariable=saveHotkey_label, font='Arial 10').grid(row=0, column=0, sticky=W, padx=2)
+line6 = Label(tab2, textvariable=loadHotkey_label, font='Arial 10').grid(row=1, column=0, sticky=W, padx=2)
+line7 = Label(tab2, textvariable=renameHotkey_label, font='Arial 10').grid(row=2, column=0, sticky=W, padx=2)
+line8 = Label(tab2, textvariable=deleteHotkey_label, font='Arial 10').grid(row=3, column=0, sticky=W, padx=2)
 #Button to bind key to Injection.
-button3 = Button(win, text="Bind Key", command=set_hotkey_save).grid(row=9, column=3, sticky=E, padx=5)
-button4 = Button(win, text="Bind Key", command=set_hotkey_load).grid(row=10, column=3, sticky=E, padx=5)
-button5 = Button(win, text="Bind Key", command=set_hotkey_rename).grid(row=11, column=3, sticky=E, padx=5)
-button6 = Button(win, text="Bind Key", command=set_hotkey_delete).grid(row=12, column=3, sticky=E, padx=5)
-#Refresh Button
-button7 = Button (win, text="Refresh", command=refresh_listbox).grid(row=3, column=3, sticky=NE, padx=5)
+button3 = Button(tab2, text="Bind Key", command=set_hotkey_save).grid(row=0, column=3, sticky=E, padx=5)
+button4 = Button(tab2, text="Bind Key", command=set_hotkey_load).grid(row=1, column=3, sticky=E, padx=5)
+button5 = Button(tab2, text="Bind Key", command=set_hotkey_rename).grid(row=2, column=3, sticky=E, padx=5)
+button6 = Button(tab2, text="Bind Key", command=set_hotkey_delete).grid(row=3, column=3, sticky=E, padx=5)
 #Sound Options
-button8 = Checkbutton (win, text="Audio", font='Arial 10', variable=sound_var, onvalue=1, offvalue=0, command=confirm_sound).grid(row=4, column=3, sticky=E, padx=5)
+button8 = Checkbutton (tab3, text="Audio", font='Arial 10', variable=sound_var, onvalue=1, offvalue=0, command=confirm_sound).grid(row=3, column=0, sticky=E, padx=5)
 #Reset Config Button
-button8 = Button(win, text="Reset", command=reset_config).grid(row=13, column=3, sticky=SE, padx=5)
+button8 = Button(tab3, text="Reset", command=reset_config).grid(row=3, column=0, sticky=W, padx=5)
 #Lower Thirds
-line11 = Label(win, text=version + " by Hazeblade").grid(row=13, column=0, sticky=SW, padx=2)
-link = Label(win, text="Support me on Patreon!", fg="blue", cursor="hand2")
-link.grid(row=14, column=0, sticky=W, padx=2)
+line9 = Label(tab3, text="Universal Save Tool").grid(row=0, column = 0, padx=2)
+line10 = Label(tab3, text=version + " by Hazeblade").grid(row=1, column=0, padx=2)
+link = Label(tab3, text="Support me on Patreon!", fg="blue", cursor="hand2")
+link.grid(row=2, column=0, padx=2)
 link.bind("<Button-1>", lambda e: hyperlink("http://www.patreon.com/hazebladetv"))
+#Pack the GUI
+notebook.grid(row=0)
 #Start the auto-refresh loop
 auto_refresh_listbox()
+#Bind the on_close function to the window close event
+win.protocol("WM_DELETE_WINDOW", on_close)
+#Load and select the profile.
+select_profile(None)
 #Mainloop
 win.mainloop()
