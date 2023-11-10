@@ -1,3 +1,18 @@
+1.2.5	Another big update! Massive GUI improvements, and Dynamic Save Slots are supported!
+
+	New Features: 
+		Dynamic Save Slots support has been added. It's not perfect, but should work for any game that saves a different filename when overwriting saves as long as saves are stored in separate folders.
+
+	QoL Improvements:
+		MASSIVE GUI overhaul. Added tabs to reduce window size and keep things looking clean.
+
+	Bug Fixes:
+		Scroll feature implemented into the dropdown menu for Profiles along with a nicer looking menu overall.
+		Numerous bug fixes related to hotswapping profiles and updating user config files when a new version of the program is available.
+
+	Known Issues:
+		Sometimes when resetting your config file, you'll get an error about the listbox. It doesn't persist since the config file gets reset.
+	
 1.2.0	HUUUUGE UPDATE! Hope y'all enjoy the new and improved UST.
 
 	New Features:
