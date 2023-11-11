@@ -1,5 +1,5 @@
 ### Universal Save Tool by Hazeblade###
-version = "ver. 1.2.5"
+version = "ver. 1.2.6"
 #Library Imports.
 from tkinter import *
 from tkinter import filedialog
@@ -221,7 +221,7 @@ def load_last_used_profile():
 from tkinter import messagebox
 
 def select_profile(event):
-    global selected_profile, dynamic_filename_var, scan_thread
+    global selected_profile, dynamic_filename_var, scan_thread, profile_changed_flag
 
     selected_profile = profile_var.get()
     config['last_used_profile'] = selected_profile
@@ -229,8 +229,13 @@ def select_profile(event):
     # Stop the current scanner (if running)
     stop_scan.set()
 
+    # Clear the current selection in the listbox
+    input_listbox.selection_clear(0, 'end')
+
     if selected_profile in config['profiles']:
         profile_data = config['profiles'][selected_profile]
+
+        profile_changed_flag = True
 
         # Handle Dynamic Save Slots
         if profile_data['dynamicsaves'] == 0:
@@ -271,7 +276,6 @@ def select_profile(event):
         write_data()
         refresh_listbox()
 
-
     
 def listbox_populate(filepath, input_dir): #Get a list of all save files in the chosen directory.
     try:
@@ -294,7 +298,7 @@ def listbox_populate(filepath, input_dir): #Get a list of all save files in the 
 
     
 def refresh_listbox(new_save_name=None):
-    global selected_input
+    global selected_input, profile_changed_flag
     try:
         if not os.path.exists(config['profiles'][selected_profile]['inputfile']):
             messagebox.showwarning("Filepath Not Found", "The specified filepath does not exist.")
@@ -302,17 +306,18 @@ def refresh_listbox(new_save_name=None):
 
         listbox_populate(filepath=config['profiles'][selected_profile]['inputfile'], input_dir=[])
 
-        if new_save_name:
+        if new_save_name and not profile_changed_flag:
             # Find the index of the newly created save
             new_save_index = input_listbox.get(0, END).index(new_save_name)
             input_listbox.selection_clear(0, END)  # Clear the current selection
             input_listbox.selection_set(new_save_index)  # Select the new save
             input_listbox.see(new_save_index)  # Scroll to make the new save visible
-        elif selected_input:
+        elif selected_input and not profile_changed_flag:
             new_save_index = input_listbox.get(0, END).index(selected_input)
             input_listbox.selection_clear(0, END)  # Clear the current selection
             input_listbox.selection_set(new_save_index)  # Select the new save
-
+            
+        profile_changed_flag = False
     except Exception as e:
         logging.error(f"Failed to refresh listbox: {e}")
         messagebox.showerror("Error", f"An error occurred while refreshing the listbox: {e}")
