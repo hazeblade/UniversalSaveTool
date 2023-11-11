@@ -1,3 +1,8 @@
+1.2.7	QoL Improvements:
+		Updated GUI elements to scale better when the window is resized and maintain the overall look.
+		Truncated the directory where save files are stored to just show the direct folder.
+		Window size is now saved between sessions.
+
 1.2.6	Bug Fixes:
 		Fixed the listbox error that was occuring when resetting the config file and switching profiles.
 
