@@ -15,6 +15,9 @@ You can create, edit, delete, and duplicate profiles in the profile tab.
 Click 'Browse' next to 'Load Save' to change where you save your backup saves (/Saves/ is chosen by default). Feel free to make your own folders and Browse between them.
 Select the save you want to load from the list that populates.
 
+If you have save files from another Save Organizer, you can use the import feature to convert them to .sav files.
+  The import feature will convert the entire folder, so make sure the folder you pick ONLY contains the save files you want to import! When in doubt, always make a backup of your saves!
+
 Dynamic Save Slots can be enabled for games that change the filename when saves are overwritten. (THIS IS RARE AND SHOULD ONLY BE USED WHEN YOU KNOW IT APPLIES TO YOUR GAME!)
 
 Click 'Browse' next to "Save Slot" to navigate to your saves folder (Documents/Dead Space (2023)/settings/steam - Save Locations for other games are varied).
