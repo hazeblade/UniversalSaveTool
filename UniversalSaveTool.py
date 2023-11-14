@@ -263,14 +263,18 @@ def refresh_listbox(new_save_name=None): #Refreshes the listbox.
             savefileListbox.selection_set(new_save_index)
             savefileListbox.see(new_save_index)
         elif selected_input and not profile_changed_flag:
-            new_save_index = savefileListbox.get(0, END).index(selected_input)
-            savefileListbox.selection_clear(0, END)
-            savefileListbox.selection_set(new_save_index)
+            save_items = savefileListbox.get(0, END)
+            if selected_input in save_items:
+                new_save_index = save_items.index(selected_input)
+                savefileListbox.selection_clear(0, END)
+                savefileListbox.selection_set(new_save_index)
+            else:
+                savefileListbox.selection_clear(0, END)
             
         profile_changed_flag = False
     except Exception as e:
-        logging.error(f"Failed to refresh listbox: {e}")
-        messagebox.showerror("Error", f"An error occurred while refreshing the listbox: {e}")
+        logging.error(f"An error occurred in refresh_listbox(): {e}")
+        messagebox.showerror("Error", f"An error occurred in refresh_listbox(): {e}")
         
 
 def auto_refresh_listbox(): #Schedules automatic refreshing of the listbox.
@@ -436,10 +440,11 @@ def import_files():  #Converts a directory of files into .sav files.
                             new_filename = f"{os.path.splitext(filename)[0]}_{counter}.sav"
                             destination_path = os.path.join(filepath, new_filename)
                             counter += 1
-                        if counter >=1:
-                            import_duplicate = messagebox.showinfo("Duplicate Files", f"{counter} file(s) already exist. Appended integer to filename")
+                        
                         os.rename(source_path, destination_path)
                         input_dir.append(new_filename)
+                if counter >=1:
+                            import_duplicate = messagebox.showinfo("Duplicate Files", f"{counter} file(s) already exist. Appended integer to filename")
 
             config['profiles'][selected_profile]['inputfile'] = filepath
             write_data()
