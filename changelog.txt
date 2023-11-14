@@ -1,3 +1,10 @@
+1.2.8	New Features:
+		An Import button has been added to the GUI. To use, simply select the directory of save files you wish to import. All files in the selected folder will be coverted to .sav files and your save file directory will be updated.
+			NOTE: Make sure the contents of the folder include ONLY save files! The import scan will not read folders so don't worry about those :)
+	Bug Fixes:
+		Fixed an issue where deleting every profile and closing the software would result in the tool no longer functioning. If the tool detects no profile data on launch, a new Default Profile will now be created for you.
+		Fixed an issue where filename changes occurring outside of the tool would produce a listbox error if the file being changed was the currently selected save file.
+
 1.2.7	QoL Improvements:
 		Updated GUI elements to scale better when the window is resized and maintain the overall look.
 		Truncated the directory where save files are stored to just show the direct folder.
