@@ -31,7 +31,7 @@ Sound can be toggled with the 'Audio' check button found in the About tab.
 
 Press 'Reset' to return all tool features to their installed defaults. THIS CANNOT BE UNDONE! The program will exit. You can find this button in the About tab.
 
-You can manually update by using the "Check for Updates" button.
+UST automatically determines when an update is available and prompts the user. You can manually update by using the "Check for Updates" button.
 
 Once you're set up, use your hotkeys to create, load, and rename your practice saves!
 
