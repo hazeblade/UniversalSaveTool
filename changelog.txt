@@ -1,3 +1,13 @@
+1.3.0	New Features:
+		An in-app updater has been added starting from this version. For future releases, you can download directly from within the software! A button has also been added to the 'About" tab if you initially decline updates and decide to install later.
+		Replace has been added with its own hotkey. When used, will overwrite your currently selected save from the listbox. Make sure you have the correct save selected that you want to replace!
+		Tooltips have been added to all buttons.
+	QoL Improvements:
+		Import no longer renames the files imported, and instead makes a separate copy. This will retain the old files so they can still be used with other Save Organizers.
+		The rename, edit profile and duplicate profile functions now prefill the existing filename.
+	Minor Changes:
+		Keybinds tab has been updated to show each feature's currently bound key as the rebind button.
+
 1.2.8	New Features:
 		An Import button has been added to the GUI. To use, simply select the directory of save files you wish to import. All files in the selected folder will be coverted to .sav files and your save file directory will be updated.
 			NOTE: Make sure the contents of the folder include ONLY save files! The import scan will not read folders so don't worry about those :)
