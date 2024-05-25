@@ -1,3 +1,8 @@
+1.3.3	QoL Improvements:
+		When secondary save slots is enabled, the tool will now scan to see which save slot is more recent and make a backup of that instead of defaulting to slot 1.
+	Minor Changes:
+		Default config has sound disabled until further notice.
+
 1.3.2	Bug Fixes:
 		Addressed a bug where the updater would download the file but it would fail to install.
 		NOTE: If you are using version 1.3.0 or 1.3.1, you will need to manually download this version and replace your old .exe with this one.
