@@ -1,6 +1,6 @@
 Universal Save Tool
 
-version 1.3.0
+version 1.3.4
 by Hazeblade
 
 Releases:
@@ -51,5 +51,5 @@ I want to get plenty of feedback on this, so feel free to send me suggestions an
 
 --------------------------------------------
 
-If you're feeling generous, you can subscribe to my Patreon for only $1!
-http://www.patreon.com/hazebladetv
+If you're feeling generous, feel free to buy me a coffee!
+https://www.Ko-fi.com/hazeblade
