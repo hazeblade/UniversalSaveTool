@@ -1,3 +1,8 @@
+1.3.4	QoL Improvements:
+		Confirmation prompts have been added to replacing saves. You can toggle this in the 'About' Tab.
+	Miscellaneous:
+		Updated support link.
+
 1.3.3	QoL Improvements:
 		When Save Slot 2 is enabled, the tool will now scan to see which save slot is more recent and backup the most recent one.
 	Minor Changes:
